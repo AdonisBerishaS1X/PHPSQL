@@ -1,26 +1,30 @@
 <?php
 session_start();
-include "db.php";
+include "config.php";
 
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
     $password = $_POST["password"];
-
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user && password_verify($password, $user["password"])) {
-        $_SESSION["user_id"] = $user["id"];
-        $_SESSION["username"] = $user["username"];
-        header("Location: ../wiki/dashboard.php");
-        exit();
+    if (empty($username) || empty($password)) {
+        $error = "Please fill in all the fields";
     } else {
-        $error = "Invalid username or password";
+        $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            $error = "The username does not exist";
+        } else {
+            if (password_verify($password, $user['password'])) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                header('Location: ../index.php');
+                exit();
+            } else {
+                $error = "The password is incorrect";
+            }
+        }
     }
 }
 ?>
@@ -114,6 +118,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <div class="login-box">
     <h2>Login</h2>
 
+    <?php if (isset($_GET['registered'])): ?>
+        <div class="success" style="color:#4caf50;text-align:center;margin-bottom:15px;">Registration successful! Please log in.</div>
+    <?php endif; ?>
     <?php if ($error): ?>
         <div class="error"><?php echo $error; ?></div>
     <?php endif; ?>

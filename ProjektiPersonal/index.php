@@ -1,4 +1,7 @@
-<?php // You can include config.php or session logic here if needed ?>
+<?php
+session_start();
+$loggedIn = isset($_SESSION['user_id']);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,7 +145,7 @@
 		}
 
 		function goToCustomWiki() {
-			window.location.href = "php/login.php";
+			<?php if($loggedIn) echo 'window.location.href = "create.php";'; else echo 'alert("you are not logged in!");'; ?>
 		}
 	</script>
 </head>
@@ -153,10 +156,16 @@
 	<h1>Warhammer 40,000 Codex</h1>
 	<nav>
 		<a href="index.php">Home</a>
-		<a href="about.html">About</a>
-		<a href="contact.html">Contact</a>
-		<a href="rules.html">Rules</a>
-		<a href="php/login.php" class="login-btn">Login</a>
+		<?php if($loggedIn): ?>
+			<a href="mywikis.php">My Wikis</a>
+			<a href="create.php">Create Wiki</a>
+			<a href="php/logout.php">Logout</a>
+		<?php else: ?>
+			<a href="php/login.php" class="login-btn">Login</a>
+		<?php endif; ?>
+		<a href="about.php">About</a>
+		<a href="contact.php">Contact</a>
+		<a href="rules.php">Rules</a>
 	</nav>
 </header>
 

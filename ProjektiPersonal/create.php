@@ -3,20 +3,22 @@
 session_start();
 include_once "php/config.php";
 
-// Redirect to login if not authenticated
+// Check if not authenticated
 if (!isset($_SESSION['user_id'])) {
-    header('Location: php/login.php');
+    echo "<!DOCTYPE html><html><body><script>alert('you are not logged in!');</script></body></html>";
     exit();
 }
 
 // Create table if not exists (for demo, production should use migrations)
-$conn->exec("CREATE TABLE IF NOT EXISTS custom_wikis (
+$conn->query("CREATE TABLE IF NOT EXISTS custom_wikis (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     lore TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
-$conn->exec("CREATE TABLE IF NOT EXISTS custom_wiki_images (
+$conn->query("ALTER TABLE custom_wikis ADD COLUMN IF NOT EXISTS user_id INT NOT NULL DEFAULT 0");
+$conn->query("CREATE TABLE IF NOT EXISTS custom_wiki_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
     wiki_id INT,
     image_path VARCHAR(255),
@@ -31,9 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($title) || empty($lore)) {
         $error = "Title and lore are required.";
     } else {
-        $stmt = $conn->prepare("INSERT INTO custom_wikis (title, lore) VALUES (?, ?)");
-        if ($stmt->execute([$title, $lore])) {
-            $wiki_id = $conn->lastInsertId();
+        $stmt = $conn->prepare("INSERT INTO custom_wikis (user_id, title, lore) VALUES (?, ?, ?)");
+        $stmt->bind_param("iss", $_SESSION['user_id'], $title, $lore);
+        if ($stmt->execute()) {
+            $wiki_id = $conn->insert_id;
             // Handle images
             if (!empty($_FILES['images']['name'][0])) {
                 $uploadDir = 'uploads/';
@@ -43,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $targetFile = $uploadDir . uniqid() . '_' . $fileName;
                     if (move_uploaded_file($tmp_name, $targetFile)) {
                         $imgStmt = $conn->prepare("INSERT INTO custom_wiki_images (wiki_id, image_path) VALUES (?, ?)");
-                        $imgStmt->execute([$wiki_id, $targetFile]);
+                        $imgStmt->bind_param("is", $wiki_id, $targetFile);
+                        $imgStmt->execute();
                     }
                 }
             }
@@ -174,10 +178,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>Warhammer 40,000 Codex</h1>
     <nav>
         <a href="index.php">Home</a>
+        <a href="mywikis.php">My Wikis</a>
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
         <a href="rules.html">Rules</a>
-        <a href="php/login.php" class="login-btn">Login</a>
+        <a href="php/logout.php">Logout</a>
     </nav>
 </header>
 <main class="main-content">
@@ -197,8 +202,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Show uploaded images for the last created wiki
     if ($success && isset($wiki_id)) {
         $imgRes = $conn->prepare("SELECT image_path FROM custom_wiki_images WHERE wiki_id = ?");
-        $imgRes->execute([$wiki_id]);
-        $images = $imgRes->fetchAll(PDO::FETCH_ASSOC);
+        $imgRes->bind_param("i", $wiki_id);
+        $imgRes->execute();
+        $result = $imgRes->get_result();
+        $images = [];
+        while ($row = $result->fetch_assoc()) {
+            $images[] = $row;
+        }
         if ($images) {
             echo '<div class="uploaded-images">';
             foreach ($images as $img) {

@@ -1,6 +1,11 @@
 <?php
-include "../php/auth.php";
-include "../php/db.php";
+session_start();
+include "../php/config.php";
+
+if (!isset($_SESSION["user_id"])) {
+    echo "<!DOCTYPE html><html><body><script>alert('you are not logged in!');</script></body></html>";
+    exit();
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $title = $_POST["title"];

@@ -11,8 +11,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Please fill in all the fields";
     } else {
         $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
         if (!$user) {
             $error = "The username does not exist";
         } else {

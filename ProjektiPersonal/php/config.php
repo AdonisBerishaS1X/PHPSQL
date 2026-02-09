@@ -1,6 +1,14 @@
 <?php
-$conn = new mysqli("localhost", "root", "", "wikilogin");
-if ($conn->connect_error) {
-	die("Connection failed: " . $conn->connect_error);
+
+$user="root";
+$pass="";
+$server="localhost";
+$dbname="wikilogin";
+
+$conn = mysqli_connect($server, $user, $pass, $dbname);
+
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
 }
+
 ?>

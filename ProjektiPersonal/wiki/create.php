@@ -12,9 +12,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $content = $_POST["content"];
     $user_id = $_SESSION["user_id"];
 
-    $stmt = $conn->prepare("INSERT INTO wikis (user_id, title, content) VALUES (?, ?, ?)");
-    $stmt->bind_param("iss", $user_id, $title, $content);
-    $stmt->execute();
+    $stmt = mysqli_prepare($conn, "INSERT INTO wikis (user_id, title, content) VALUES (?, ?, ?)");
+    mysqli_stmt_bind_param($stmt, "iss", $user_id, $title, $content);
+    mysqli_stmt_execute($stmt);
 
     header("Location: dashboard.php");
 }

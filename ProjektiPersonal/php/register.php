@@ -14,21 +14,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match.";
     } else {
-        // Check for duplicate username (PDO)
-        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
-        $stmt->execute([$username]);
-        if ($stmt->fetch()) {
+        // Check for duplicate username
+        $stmt = mysqli_prepare($conn, "SELECT id FROM users WHERE username = ?");
+        mysqli_stmt_bind_param($stmt, "s", $username);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_store_result($stmt);
+        if (mysqli_stmt_num_rows($stmt) > 0) {
             $error = "An account with that username already exists.";
         } else {
             $password_hashed = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-            if ($stmt->execute([$username, $password_hashed])) {
+            $stmt = mysqli_prepare($conn, "INSERT INTO users (username, password) VALUES (?, ?)");
+            mysqli_stmt_bind_param($stmt, "ss", $username, $password_hashed);
+            if (mysqli_stmt_execute($stmt)) {
                 header("Location: login.php?registered=1");
                 exit();
             } else {
                 $error = "Error creating account.";
             }
         }
+        mysqli_stmt_close($stmt);
     }
 }
 ?>
